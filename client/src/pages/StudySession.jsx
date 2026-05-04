@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { playPing } from '../utils/audio';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDeck } from '../context/DeckContext';
 import FlashcardCard from '../components/FlashcardCard';
@@ -63,6 +64,7 @@ const StudySession = () => {
       });
 
       setSessionComplete(true);
+      playPing('hooray');
     } else {
       setCurrentIndex(current => current + 1);
     }
