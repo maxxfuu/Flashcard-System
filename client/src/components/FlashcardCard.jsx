@@ -15,6 +15,77 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
 
   const displayHint = card.hint || generatedHint;
 
+  const handleGenerateHint = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    try {
+      const response = await fetch('http://localhost:8000/generate-hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ front: card.front, back: card.back })
+      });
+      if (!response.ok) throw new Error("Failed to generate hint");
+      const data = await response.json();
+      setGeneratedHint(data.hint);
+      onUseHint();
+    } catch (error) {
+      console.error("Error generating hint:", error);
+      alert("Failed to generate hint from DL server.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setIsFlipped(prev => !prev);
+        return;
+      }
+
+      if (showConfidence) {
+        if (e.key === '1') {
+          e.preventDefault();
+          setIsFlipped(false);
+          setShowConfidence(false);
+          onAnswer(true, 'low');
+        } else if (e.key === '2') {
+          e.preventDefault();
+          setIsFlipped(false);
+          setShowConfidence(false);
+          onAnswer(true, 'medium');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          setIsFlipped(false);
+          setShowConfidence(false);
+          onAnswer(true, 'high');
+        }
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (!hintUsed && !isGenerating) {
+          if (displayHint) onUseHint();
+          else handleGenerateHint();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        setShowConfidence(true);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        setIsFlipped(false);
+        onAnswer(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showConfidence, isFlipped, hintUsed, isGenerating, displayHint, card, onAnswer, onUseHint]);
+
   return (
     <div className="flashcard-container">
       <div
@@ -24,7 +95,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
         <div className="flashcard-inner">
           <div className="flashcard-front">
             <p>{card.front}</p>
-            <span className="flip-hint">Click to flip</span>
+            <span className="flip-hint">Click or Space to flip</span>
           </div>
           <div className="flashcard-back">
             <p>{card.back}</p>
@@ -38,38 +109,19 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
             <button
               className={`btn btn-secondary ${hintUsed ? 'btn-used' : ''}`}
               onClick={() => {
-                if (!hintUsed) onUseHint();
+                if (!hintUsed && !showConfidence) onUseHint();
               }}
-              disabled={hintUsed}
+              disabled={hintUsed || showConfidence}
             >
-              {hintUsed ? `Hint: ${displayHint}` : '💡 Show Hint'}
+              {hintUsed ? `Hint: ${displayHint}` : '💡 Show Hint (Tab)'}
             </button>
           ) : (
             <button
               className={`btn btn-secondary`}
-              onClick={async () => {
-                if (isGenerating) return;
-                setIsGenerating(true);
-                try {
-                  const response = await fetch('http://localhost:8000/generate-hint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ front: card.front, back: card.back })
-                  });
-                  if (!response.ok) throw new Error("Failed to generate hint");
-                  const data = await response.json();
-                  setGeneratedHint(data.hint);
-                  onUseHint();
-                } catch (error) {
-                  console.error("Error generating hint:", error);
-                  alert("Failed to generate hint from DL server.");
-                } finally {
-                  setIsGenerating(false);
-                }
-              }}
-              disabled={isGenerating}
+              onClick={showConfidence ? undefined : handleGenerateHint}
+              disabled={isGenerating || showConfidence}
             >
-              {isGenerating ? 'Generating...' : '🤖 Generate Hint'}
+              {isGenerating ? 'Generating...' : '🤖 Generate Hint (Tab)'}
             </button>
           )}
         </div>
@@ -84,13 +136,13 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                   onAnswer(false);
                 }}
               >
-                ✗ No
+                ✗ No (Del)
               </button>
               <button
                 className="btn btn-success btn-lg"
                 onClick={() => setShowConfidence(true)}
               >
-                ✓ Yes
+                ✓ Yes (Enter)
               </button>
             </>
           ) : (
@@ -103,7 +155,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                   onAnswer(true, 'low');
                 }}
               >
-                Low
+                Low (1)
               </button>
               <button
                 className="btn btn-secondary btn-lg"
@@ -113,7 +165,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                   onAnswer(true, 'medium');
                 }}
               >
-                Medium
+                Medium (2)
               </button>
               <button
                 className="btn btn-success btn-lg"
@@ -123,7 +175,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                   onAnswer(true, 'high');
                 }}
               >
-                High
+                High (3)
               </button>
             </div>
           )}
