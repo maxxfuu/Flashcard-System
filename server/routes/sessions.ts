@@ -76,7 +76,14 @@ router.post("/round", requireAuth, async (req: Request, res: Response) => {
       res.status(502).json({ error: "ML service returned an error", detail });
       return;
     }
-    mlResults = await mlRes.json();
+    mlResults = await mlRes.json() as Array<{
+      card_id: string;
+      due: string;
+      stability: number;
+      difficulty: number;
+      state: number;
+      instances_for_next_round: number;
+    }>;
   } catch (err) {
     console.error("Failed to reach ML service:", err);
     res.status(502).json({ error: "Could not reach ML service" });
