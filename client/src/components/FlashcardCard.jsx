@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { playPing } from '../utils/audio';
 import '../styles/FlashcardCard.css';
 
 const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
@@ -42,6 +43,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
 
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
+        playPing('flip');
         setIsFlipped(prev => !prev);
         return;
       }
@@ -49,16 +51,19 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
       if (showConfidence) {
         if (e.key === '1') {
           e.preventDefault();
+          playPing('confidence');
           setIsFlipped(false);
           setShowConfidence(false);
           onAnswer(true, 'low');
         } else if (e.key === '2') {
           e.preventDefault();
+          playPing('confidence');
           setIsFlipped(false);
           setShowConfidence(false);
           onAnswer(true, 'medium');
         } else if (e.key === '3') {
           e.preventDefault();
+          playPing('confidence');
           setIsFlipped(false);
           setShowConfidence(false);
           onAnswer(true, 'high');
@@ -68,15 +73,18 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
 
       if (e.key === 'Tab') {
         e.preventDefault();
-        if (!hintUsed && !isGenerating) {
+        if (!hintUsed && !isGenerating && !showConfidence) {
+          playPing('hint');
           if (displayHint) onUseHint();
           else handleGenerateHint();
         }
       } else if (e.key === 'Enter') {
         e.preventDefault();
+        playPing('yes');
         setShowConfidence(true);
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
+        playPing('no');
         setIsFlipped(false);
         onAnswer(false);
       }
@@ -90,7 +98,10 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
     <div className="flashcard-container">
       <div
         className={`flashcard ${isFlipped ? 'flipped' : ''}`}
-        onClick={() => setIsFlipped(!isFlipped)}
+        onClick={() => {
+          playPing('flip');
+          setIsFlipped(!isFlipped);
+        }}
       >
         <div className="flashcard-inner">
           <div className="flashcard-front">
@@ -109,7 +120,10 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
             <button
               className={`btn btn-secondary ${hintUsed ? 'btn-used' : ''}`}
               onClick={() => {
-                if (!hintUsed && !showConfidence) onUseHint();
+                if (!hintUsed && !showConfidence) {
+                  playPing('hint');
+                  onUseHint();
+                }
               }}
               disabled={hintUsed || showConfidence}
             >
@@ -118,7 +132,10 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
           ) : (
             <button
               className={`btn btn-secondary`}
-              onClick={showConfidence ? undefined : handleGenerateHint}
+              onClick={showConfidence ? undefined : () => {
+                playPing('hint');
+                handleGenerateHint();
+              }}
               disabled={isGenerating || showConfidence}
             >
               {isGenerating ? 'Generating...' : '🤖 Generate Hint (Tab)'}
@@ -132,6 +149,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
               <button
                 className="btn btn-danger btn-lg"
                 onClick={() => {
+                  playPing('no');
                   setIsFlipped(false);
                   onAnswer(false);
                 }}
@@ -140,7 +158,10 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
               </button>
               <button
                 className="btn btn-success btn-lg"
-                onClick={() => setShowConfidence(true)}
+                onClick={() => {
+                  playPing('yes');
+                  setShowConfidence(true);
+                }}
               >
                 ✓ Yes (Enter)
               </button>
@@ -150,6 +171,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
               <button
                 className="btn btn-danger btn-lg"
                 onClick={() => {
+                  playPing('confidence');
                   setIsFlipped(false);
                   setShowConfidence(false);
                   onAnswer(true, 'low');
@@ -160,6 +182,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
               <button
                 className="btn btn-secondary btn-lg"
                 onClick={() => {
+                  playPing('confidence');
                   setIsFlipped(false);
                   setShowConfidence(false);
                   onAnswer(true, 'medium');
@@ -170,6 +193,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
               <button
                 className="btn btn-success btn-lg"
                 onClick={() => {
+                  playPing('confidence');
                   setIsFlipped(false);
                   setShowConfidence(false);
                   onAnswer(true, 'high');
