@@ -1,20 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Landing.css';
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { continueAsGuest, signIn } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
 
-  const handleContinueAsGuest = () => {
-    continueAsGuest();
-    navigate('/home');
-  };
+  useEffect(() => {
+    if (!loading && user) navigate('/home', { replace: true });
+  }, [user, loading, navigate]);
 
-  const handleSignIn = () => {
-    navigate('/auth');
-  };
+  if (loading) return null;
 
   return (
     <div className="landing-page">
@@ -22,13 +19,9 @@ const Landing = () => {
         <div className="landing-content">
           <h1>Flash Me</h1>
           <p className="landing-subtitle">Master your knowledge with spaced repetition</p>
-
           <div className="landing-buttons">
-            <button className="btn btn-primary" onClick={handleSignIn}>
-              Sign In
-            </button>
-            <button className="btn btn-secondary" onClick={handleContinueAsGuest}>
-              Continue as Guest
+            <button className="btn btn-primary" onClick={signInWithGoogle}>
+              Sign in with Google
             </button>
           </div>
         </div>

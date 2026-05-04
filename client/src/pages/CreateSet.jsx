@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDeck } from '../context/DeckContext';
 import FlashcardForm from '../components/FlashcardForm';
@@ -7,21 +7,14 @@ import '../styles/CreateSet.css';
 const CreateSet = () => {
   const navigate = useNavigate();
   const { deckId } = useParams();
-  const { decks, addFlashcard, updateFlashcard, deleteFlashcard, currentDeck, selectDeck } = useDeck();
-  const [deck, setDeck] = useState(() => {
-    const found = decks.find(d => d.id === deckId);
-    if (found && currentDeck?.id !== deckId) {
-      selectDeck(deckId);
-    }
-    return found;
-  });
+  const { currentDeck, loadDeck, addFlashcard, deleteFlashcard } = useDeck();
+
+  useEffect(() => {
+    loadDeck(deckId);
+  }, [deckId, loadDeck]);
 
   const handleAddCard = (front, back, hint) => {
     addFlashcard(deckId, front, back, hint);
-  };
-
-  const handleUpdateCard = (cardId, front, back, hint) => {
-    updateFlashcard(deckId, cardId, front, back, hint);
   };
 
   const handleDeleteCard = (cardId) => {
@@ -29,20 +22,17 @@ const CreateSet = () => {
   };
 
   const handleFlashMe = () => {
-    if (deck?.flashcards.length > 0) {
+    if (currentDeck?.cards?.length > 0) {
       navigate(`/study/${deckId}`);
     } else {
       alert('Please add at least one flashcard before studying');
     }
   };
 
-  if (!deck) {
+  if (!currentDeck || currentDeck.id !== deckId) {
     return (
       <div className="create-set">
-        <p>Deck not found</p>
-        <button className="btn btn-primary" onClick={() => navigate('/home')}>
-          Back to Home
-        </button>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -54,7 +44,7 @@ const CreateSet = () => {
           <button className="btn btn-text" onClick={() => navigate('/home')}>
             ← Back
           </button>
-          <h1>{deck.name}</h1>
+          <h1>{currentDeck.title}</h1>
         </div>
       </header>
 
@@ -65,12 +55,12 @@ const CreateSet = () => {
         </div>
 
         <div className="cards-section">
-          <h2>Flashcards ({deck.flashcards.length})</h2>
-          {deck.flashcards.length === 0 ? (
+          <h2>Flashcards ({currentDeck.cards?.length ?? 0})</h2>
+          {!currentDeck.cards?.length ? (
             <p className="empty-message">No cards yet. Add one to get started!</p>
           ) : (
             <div className="cards-list">
-              {deck.flashcards.map(card => (
+              {currentDeck.cards.map(card => (
                 <div key={card.id} className="card-item">
                   <div className="card-content">
                     <div className="card-front">
@@ -102,7 +92,7 @@ const CreateSet = () => {
         <button
           className="btn btn-primary btn-lg"
           onClick={handleFlashMe}
-          disabled={deck.flashcards.length === 0}
+          disabled={!currentDeck.cards?.length}
         >
           Flash Me! Study Now
         </button>

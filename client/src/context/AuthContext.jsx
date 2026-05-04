@@ -1,42 +1,49 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import { supabase } from '../lib/supabase';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isGuest, setIsGuest] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const signIn = useCallback((email, password) => {
-    // Mock auth - replace with real API call
-    setUser({ email, id: Math.random().toString() });
-    setIsAuthenticated(true);
-    setIsGuest(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const continueAsGuest = useCallback(() => {
-    setIsGuest(true);
-    setIsAuthenticated(true);
-    setUser(null);
+  const signInWithGoogle = useCallback(async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
   }, []);
 
-  const signOut = useCallback(() => {
-    setUser(null);
-    setIsAuthenticated(false);
-    setIsGuest(false);
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isGuest, isAuthenticated, signIn, continueAsGuest, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };

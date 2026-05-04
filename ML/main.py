@@ -3,7 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Any, Union, List
 from datetime import datetime, timezone
+from pathlib import Path
+import sys
 import fsrs
+
+sys.path.insert(0, str(Path(__file__).parent.parent / 'DL'))
+from dl_hints import HintGenerator, FlashcardPrompt
 
 app = FastAPI(
     title="FSRS Microservice",
@@ -53,7 +58,9 @@ def build_card_from_request(request: FSRSRequest) -> fsrs.Card:
             card.stability = float(request.stability)
         if request.difficulty is not None:
             card.difficulty = float(request.difficulty)
-        if request.state is not None:
+        # fsrs 6.x uses State 1-3 (Learning/Review/Relearning); 0 ("New") no longer exists.
+        # Treat 0 or None as a fresh card (default state).
+        if request.state is not None and request.state != 0:
             card.state = fsrs.State(request.state)
     except Exception as e:
         raise ValueError(f"Failed to parse FSRS properties: {str(e)}")
@@ -148,13 +155,11 @@ class HintRequest(BaseModel):
 
 @app.post("/generate-hint")
 async def generate_hint(req: HintRequest):
-    # DL Model Hook here. Currently using mock logic.
     if not req.back:
         return {"hint": "No answer provided to generate hint from."}
-    
-    words = req.back.split()
-    if len(words) > 1:
-        hint = f"Starts with '{words[0]}' and ends with '{words[-1]}'"
-    else:
-        hint = f"Starts with '{req.back[:1]}'"
-    return {"hint": f"Generated: {hint}"}
+    generator = HintGenerator()
+    prompt = FlashcardPrompt(question=req.front, answer=req.back)
+    hints = generator.generate_hints(prompt, max_hints=3)
+    if not hints:
+        return {"hint": "No hint available."}
+    return {"hint": " • ".join(h.text for h in hints)}

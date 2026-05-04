@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { playPing } from '../utils/audio';
 import '../styles/FlashcardCard.css';
 
@@ -7,6 +8,8 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
   const [generatedHint, setGeneratedHint] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfidence, setShowConfidence] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const wrongAnswerPending = useRef(false);
 
   useEffect(() => {
     setGeneratedHint(null);
@@ -20,7 +23,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
     if (isGenerating) return;
     setIsGenerating(true);
     try {
-      const response = await fetch('http://localhost:8000/generate-hint', {
+      const response = await fetch('http://localhost:8001/generate-hint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ front: card.front, back: card.back })
@@ -35,6 +38,22 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleWrongAnswer = () => {
+    playPing('no');
+    setIsFlipped(false);
+    setIsShaking(true);
+    wrongAnswerPending.current = true;
+  };
+
+  const fireConfetti = () => {
+    confetti({
+      particleCount: 90,
+      spread: 70,
+      origin: { y: 0.45 },
+      colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+    });
   };
 
   useEffect(() => {
@@ -52,18 +71,21 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
         if (e.key === '1') {
           e.preventDefault();
           playPing('confidence');
+          fireConfetti();
           setIsFlipped(false);
           setShowConfidence(false);
           onAnswer(true, 'low');
         } else if (e.key === '2') {
           e.preventDefault();
           playPing('confidence');
+          fireConfetti();
           setIsFlipped(false);
           setShowConfidence(false);
           onAnswer(true, 'medium');
         } else if (e.key === '3') {
           e.preventDefault();
           playPing('confidence');
+          fireConfetti();
           setIsFlipped(false);
           setShowConfidence(false);
           onAnswer(true, 'high');
@@ -84,9 +106,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
         setShowConfidence(true);
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
-        playPing('no');
-        setIsFlipped(false);
-        onAnswer(false);
+        handleWrongAnswer();
       }
     };
 
@@ -97,10 +117,17 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
   return (
     <div className="flashcard-container">
       <div
-        className={`flashcard ${isFlipped ? 'flipped' : ''}`}
+        className={`flashcard ${isFlipped ? 'flipped' : ''} ${isShaking ? 'shake' : ''}`}
         onClick={() => {
           playPing('flip');
           setIsFlipped(!isFlipped);
+        }}
+        onAnimationEnd={() => {
+          if (wrongAnswerPending.current) {
+            wrongAnswerPending.current = false;
+            setIsShaking(false);
+            onAnswer(false);
+          }
         }}
       >
         <div className="flashcard-inner">
@@ -148,11 +175,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
             <>
               <button
                 className="btn btn-danger btn-lg"
-                onClick={() => {
-                  playPing('no');
-                  setIsFlipped(false);
-                  onAnswer(false);
-                }}
+                onClick={handleWrongAnswer}
               >
                 ✗ No (Del)
               </button>
@@ -172,6 +195,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                 className="btn btn-danger btn-lg"
                 onClick={() => {
                   playPing('confidence');
+                  fireConfetti();
                   setIsFlipped(false);
                   setShowConfidence(false);
                   onAnswer(true, 'low');
@@ -183,6 +207,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                 className="btn btn-secondary btn-lg"
                 onClick={() => {
                   playPing('confidence');
+                  fireConfetti();
                   setIsFlipped(false);
                   setShowConfidence(false);
                   onAnswer(true, 'medium');
@@ -194,6 +219,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                 className="btn btn-success btn-lg"
                 onClick={() => {
                   playPing('confidence');
+                  fireConfetti();
                   setIsFlipped(false);
                   setShowConfidence(false);
                   onAnswer(true, 'high');

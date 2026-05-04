@@ -6,30 +6,22 @@ import '../styles/Homepage.css';
 
 const Homepage = () => {
   const navigate = useNavigate();
-  const { user, isGuest, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { decks, createDeck, deleteDeck } = useDeck();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [deckName, setDeckName] = useState('');
 
-  const handleCreateDeck = (e) => {
+  const handleCreateDeck = async (e) => {
     e.preventDefault();
     if (deckName.trim()) {
-      createDeck(deckName);
+      await createDeck(deckName.trim());
       setDeckName('');
       setShowCreateForm(false);
     }
   };
 
-  const handleSelectDeck = (deckId) => {
-    navigate(`/create/${deckId}`);
-  };
-
-  const handleStudyDeck = (deckId) => {
-    navigate(`/study/${deckId}`);
-  };
-
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
     navigate('/');
   };
 
@@ -38,7 +30,7 @@ const Homepage = () => {
       <header className="homepage-header">
         <div className="header-left">
           <h1>Flash Me</h1>
-          <p>{isGuest ? 'Guest Mode' : `Welcome, ${user?.email}`}</p>
+          <p>Welcome, {user?.email}</p>
         </div>
         <button className="btn btn-text" onClick={handleSignOut}>
           Sign Out
@@ -55,18 +47,17 @@ const Homepage = () => {
           <div className="deck-grid">
             {decks.map(deck => (
               <div key={deck.id} className="deck-card">
-                <h3>{deck.name}</h3>
-                <p>{deck.flashcards.length} cards</p>
+                <h3>{deck.title}</h3>
                 <div className="deck-actions">
                   <button
                     className="btn btn-secondary"
-                    onClick={() => handleSelectDeck(deck.id)}
+                    onClick={() => navigate(`/create/${deck.id}`)}
                   >
                     Edit
                   </button>
                   <button
                     className="btn btn-primary"
-                    onClick={() => handleStudyDeck(deck.id)}
+                    onClick={() => navigate(`/study/${deck.id}`)}
                   >
                     Study
                   </button>
@@ -107,10 +98,7 @@ const Homepage = () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setDeckName('');
-                  }}
+                  onClick={() => { setShowCreateForm(false); setDeckName(''); }}
                 >
                   Cancel
                 </button>
