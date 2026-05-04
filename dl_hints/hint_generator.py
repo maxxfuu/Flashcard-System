@@ -16,12 +16,8 @@ class FlashcardPrompt:
 
     question: str
     answer: str
-    subject: str | None = None
     deck_name: str | None = None
-    deck_description: str | None = None
-    times_seen: int = 0
-    times_correct: int = 0
-    times_incorrect: int = 0
+    difficulty: int = 5
 
 
 @dataclass(frozen=True)
@@ -50,12 +46,13 @@ class HintGenerator:
             raise ValueError("question must not be empty")
         if not answer:
             raise ValueError("answer must not be empty")
+        self._validate_difficulty(prompt.difficulty)
         if max_hints < 1:
             return []
 
         candidates = [
-            self._concept_hint(question, prompt.subject),
-            self._practice_hint(prompt),
+            self._concept_hint(question, prompt.deck_name),
+            self._difficulty_hint(prompt.difficulty),
             self._first_letter_hint(answer),
             self._shape_hint(answer),
         ]
@@ -75,8 +72,9 @@ class HintGenerator:
             raise ValueError("question must not be empty")
         if not answer:
             raise ValueError("answer must not be empty")
+        self._validate_difficulty(prompt.difficulty)
 
-        difficulty_note = self._difficulty_note(prompt)
+        difficulty_note = self._difficulty_note(prompt.difficulty)
         deck_context = self._deck_context(prompt)
 
         return "\n".join(
@@ -86,14 +84,9 @@ class HintGenerator:
                 "",
                 f"Front of card: {question}",
                 f"Back of card: {answer}",
-                f"Subject: {prompt.subject or 'unknown'}",
                 f"Deck context: {deck_context}",
-                "",
-                "Learner history:",
-                f"- Times seen: {prompt.times_seen}",
-                f"- Times correct: {prompt.times_correct}",
-                f"- Times incorrect: {prompt.times_incorrect}",
-                f"- Difficulty guidance: {difficulty_note}",
+                f"Difficulty: {prompt.difficulty}/10",
+                f"Difficulty guidance: {difficulty_note}",
                 "",
                 f"Return {max_hints} hints.",
                 "Hint 1 should be conceptual.",
@@ -102,17 +95,17 @@ class HintGenerator:
             ]
         )
 
-    def _concept_hint(self, question: str, subject: str | None) -> tuple[str, str]:
+    def _concept_hint(self, question: str, deck_name: str | None) -> tuple[str, str]:
         keywords = self._extract_keywords(question)
-        subject_text = f" in {subject}" if subject else ""
+        deck_text = f" from the {deck_name} deck" if deck_name else ""
 
         if keywords:
             return (
                 "concept",
-                f"Think about how {', '.join(keywords[:2])} connects to the answer{subject_text}.",
+                f"Think about how {', '.join(keywords[:2])} connects to the answer{deck_text}.",
             )
 
-        return ("concept", f"Focus on the main concept being asked about{subject_text}.")
+        return ("concept", f"Focus on the main concept being asked about{deck_text}.")
 
     def _shape_hint(self, answer: str) -> tuple[str, str]:
         words = answer.split()
@@ -123,40 +116,30 @@ class HintGenerator:
 
         return ("structure", f"The answer has {word_count} words.")
 
-    def _practice_hint(self, prompt: FlashcardPrompt) -> tuple[str, str]:
-        difficulty_note = self._difficulty_note(prompt)
-
-        if prompt.times_seen == 0:
-            return ("practice", "This looks new, so start with the broad idea before checking details.")
-
-        return ("practice", difficulty_note)
+    def _difficulty_hint(self, difficulty: int) -> tuple[str, str]:
+        return ("difficulty", self._difficulty_note(difficulty))
 
     def _first_letter_hint(self, answer: str) -> tuple[str, str]:
         initials = " ".join(word[0].upper() for word in answer.split() if word)
         return ("letter", f"The answer starts with: {initials}.")
 
     def _deck_context(self, prompt: FlashcardPrompt) -> str:
-        context_parts = []
-
         if prompt.deck_name:
-            context_parts.append(prompt.deck_name.strip())
-        if prompt.deck_description:
-            context_parts.append(prompt.deck_description.strip())
+            return prompt.deck_name.strip()
 
-        return " - ".join(part for part in context_parts if part) or "none provided"
+        return "none provided"
 
-    def _difficulty_note(self, prompt: FlashcardPrompt) -> str:
-        if prompt.times_seen <= 0:
-            return "Use a gentle first-time hint because the learner has not practiced this card yet."
+    def _difficulty_note(self, difficulty: int) -> str:
+        if difficulty <= 3:
+            return "Use a light hint because this card is marked easy."
+        if difficulty <= 7:
+            return "Use a medium-strength hint because this card has moderate difficulty."
 
-        incorrect_rate = prompt.times_incorrect / prompt.times_seen
+        return "Use a more direct hint because this card is marked difficult."
 
-        if incorrect_rate >= 0.5:
-            return "Use a more direct hint because the learner has struggled with this card."
-        if prompt.times_correct > prompt.times_incorrect:
-            return "Use a lighter hint because the learner has usually answered this correctly."
-
-        return "Use a medium-strength hint because the learner's history is mixed."
+    def _validate_difficulty(self, difficulty: int) -> None:
+        if not 1 <= difficulty <= 10:
+            raise ValueError("difficulty must be between 1 and 10")
 
     def _extract_keywords(self, text: str) -> list[str]:
         stop_words = {

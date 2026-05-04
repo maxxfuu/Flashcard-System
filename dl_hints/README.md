@@ -8,7 +8,7 @@ The goal is not to build the frontend or backend yet. The goal is to provide a s
 
 Given a flashcard question and answer, return progressive hints that help the learner without immediately revealing the answer.
 
-This module also prepares the prompt context for the future deep learning model. That context can include the flashcard, deck information, and frequency/performance data.
+This module also prepares the prompt context for the future deep learning model. That context can include the flashcard, deck name, and difficulty rating.
 
 Example:
 
@@ -19,12 +19,8 @@ generator = HintGenerator()
 prompt = FlashcardPrompt(
     question="What process do plants use to convert sunlight into energy?",
     answer="photosynthesis",
-    subject="biology",
     deck_name="Plant biology",
-    deck_description="Photosynthesis and plant energy terms",
-    times_seen=4,
-    times_correct=1,
-    times_incorrect=3,
+    difficulty=8,
 )
 
 hints = generator.generate_hints(prompt)
@@ -35,8 +31,8 @@ Expected output shape:
 
 ```python
 [
-    Hint(level=1, text="Think about how process, plants connects to the answer in biology.", hint_type="concept"),
-    Hint(level=2, text="Use a more direct hint because the learner has struggled with this card.", hint_type="practice"),
+    Hint(level=1, text="Think about how process, plants connects to the answer from the Plant biology deck.", hint_type="concept"),
+    Hint(level=2, text="Use a more direct hint because this card is marked difficult.", hint_type="difficulty"),
     Hint(level=3, text="The answer starts with: P.", hint_type="letter"),
 ]
 ```
@@ -49,18 +45,14 @@ The backend should eventually pass:
 
 - `question`: the front of the flashcard
 - `answer`: the correct answer
-- `subject`: optional category, such as biology, history, or math
 - `deck_name`: optional deck name
-- `deck_description`: optional deck-level context
-- `times_seen`: how often the learner has seen the card
-- `times_correct`: how often the learner answered correctly
-- `times_incorrect`: how often the learner missed the card
+- `difficulty`: card difficulty from 1 to 10
 
 The module returns a list of `Hint` objects:
 
 - `level`: hint difficulty/order
 - `text`: hint shown to the user
-- `hint_type`: category such as concept, structure, or letter
+- `hint_type`: category such as concept, difficulty, structure, or letter
 
 ## DL Plan
 
