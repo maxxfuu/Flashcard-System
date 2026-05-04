@@ -33,6 +33,26 @@
   color: #0f172a;
 }
 
+.deck-title-input {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  outline: none;
+  padding: 2px 4px;
+  min-width: 120px;
+  width: auto;
+  transition: border-color 0.15s;
+}
+
+.deck-title-input:hover,
+.deck-title-input:focus {
+  border-bottom-color: #3b82f6;
+}
+
 .create-content {
   max-width: 1200px;
   margin: 0 auto 24px;

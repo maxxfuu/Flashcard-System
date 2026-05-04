@@ -57,6 +57,21 @@ export const DeckProvider = ({ children }) => {
     }
   }, [token]);
 
+  const updateDeck = useCallback(async (deckId, title) => {
+    if (!token) return;
+    try {
+      const updated = await apiFetch(`/flashcards/decks/${deckId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ title }),
+      }, token);
+      setDecks(prev => prev.map(d => d.id === deckId ? updated : d));
+      setCurrentDeck(prev => prev?.id === deckId ? { ...prev, title: updated.title } : prev);
+      return updated;
+    } catch (err) {
+      console.error('Failed to update deck:', err);
+    }
+  }, [token]);
+
   const deleteDeck = useCallback(async (deckId) => {
     if (!token) return;
     try {
@@ -128,6 +143,7 @@ export const DeckProvider = ({ children }) => {
       loadDecks,
       loadDeck,
       createDeck,
+      updateDeck,
       deleteDeck,
       addFlashcard,
       updateFlashcard,

@@ -44,6 +44,9 @@
 .flashcard-front {
   background: #e8e8e8;
   border: 1px solid #d0d0d0;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .flashcard-back {
@@ -82,11 +85,21 @@
   line-height: 1.6;
 }
 
+.flashcard-front p {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
 .flip-hint {
   display: block;
+  flex-shrink: 0;
   font-size: 0.75rem;
   color: #94a3b8;
-  margin-top: 20px;
+  margin-top: 0;
   font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;

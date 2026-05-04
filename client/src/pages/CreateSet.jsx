@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDeck } from '../context/DeckContext';
 import FlashcardForm from '../components/FlashcardForm';
@@ -7,11 +7,35 @@ import '../styles/CreateSet.css';
 const CreateSet = () => {
   const navigate = useNavigate();
   const { deckId } = useParams();
-  const { currentDeck, loadDeck, addFlashcard, deleteFlashcard } = useDeck();
+  const { currentDeck, loadDeck, addFlashcard, deleteFlashcard, updateDeck } = useDeck();
+  const [title, setTitle] = useState('');
+
+  const currentDeckRef = useRef(currentDeck);
+  useEffect(() => { currentDeckRef.current = currentDeck; }, [currentDeck]);
 
   useEffect(() => {
     loadDeck(deckId);
   }, [deckId, loadDeck]);
+
+  useEffect(() => {
+    if (currentDeck?.id === deckId) {
+      setTitle(currentDeck.title);
+    }
+  }, [currentDeck, deckId]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        if (currentDeckRef.current?.cards?.length > 0) navigate(`/study/${deckId}`);
+      } else if (e.key === 'Escape') {
+        navigate('/home');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate, deckId]);
 
   const handleAddCard = (front, back, hint) => {
     addFlashcard(deckId, front, back, hint);
@@ -44,7 +68,14 @@ const CreateSet = () => {
           <button className="btn btn-text" onClick={() => navigate('/home')}>
             ← Back
           </button>
-          <h1>{currentDeck.title}</h1>
+          <input
+            className="deck-title-input"
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            onBlur={() => { if (title.trim()) updateDeck(deckId, title.trim()); }}
+            onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+          />
         </div>
       </header>
 
@@ -94,7 +125,7 @@ const CreateSet = () => {
           onClick={handleFlashMe}
           disabled={!currentDeck.cards?.length}
         >
-          Flash Me! Study Now
+          Flash Me! Study Now (S)
         </button>
       </footer>
     </div>

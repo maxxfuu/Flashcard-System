@@ -65,9 +65,49 @@
   background: #e8e8e8;
   padding: 24px;
   border-radius: 16px;
-  border: 1px solid #d8d8d8;
+  border: 2px solid #d8d8d8;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 150ms ease;
+  cursor: pointer;
+}
+
+.deck-card-selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18), 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+.deck-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.deck-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #64758f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.deck-card-selected .deck-number {
+  background: #3b82f6;
+  color: white;
+}
+
+.deck-shortcut-hint {
+  margin: 0 0 12px 0;
+  font-size: 0.8rem;
+  color: #3b82f6;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -78,7 +118,7 @@
 }
 
 .deck-card h3 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 1.25rem;
   color: #0f172a;
 }

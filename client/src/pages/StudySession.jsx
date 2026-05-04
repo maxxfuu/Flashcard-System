@@ -41,6 +41,14 @@ const StudySession = () => {
     loadDeck(deckId);
   }, [deckId, loadDeck]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') navigate('/home');
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
   // Initialize first round once the deck is loaded
   useEffect(() => {
     if (

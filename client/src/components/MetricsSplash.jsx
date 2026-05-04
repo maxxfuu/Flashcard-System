@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDeck } from '../context/DeckContext';
 import '../styles/MetricsSplash.css';
 
 const MetricsSplash = ({ onBack, onRedo }) => {
   const { sessionStats } = useDeck();
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        onRedo?.();
+      } else if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        onBack?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBack, onRedo]);
 
   if (!sessionStats) {
     return (
@@ -51,11 +65,11 @@ const MetricsSplash = ({ onBack, onRedo }) => {
         <div className="metrics-footer" style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
           {onRedo && (
             <button className="btn btn-secondary btn-lg" onClick={onRedo}>
-              Redo Round
+              Redo Round (R)
             </button>
           )}
           <button className="btn btn-primary btn-lg" onClick={onBack}>
-            Back to Home
+            Back to Home (H)
           </button>
         </div>
       </div>

@@ -9,13 +9,30 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfidence, setShowConfidence] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const wrongAnswerPending = useRef(false);
+
+  // Refs so the single keydown handler always reads current values
+  const showConfidenceRef = useRef(showConfidence);
+  const isFlippedRef = useRef(isFlipped);
+  const hintUsedRef = useRef(hintUsed);
+  const isGeneratingRef = useRef(isGenerating);
+  const onAnswerRef = useRef(onAnswer);
+  const onUseHintRef = useRef(onUseHint);
+
+  useEffect(() => { showConfidenceRef.current = showConfidence; }, [showConfidence]);
+  useEffect(() => { isFlippedRef.current = isFlipped; }, [isFlipped]);
+  useEffect(() => { hintUsedRef.current = hintUsed; }, [hintUsed]);
+  useEffect(() => { isGeneratingRef.current = isGenerating; }, [isGenerating]);
+  useEffect(() => { onAnswerRef.current = onAnswer; }, [onAnswer]);
+  useEffect(() => { onUseHintRef.current = onUseHint; }, [onUseHint]);
 
   useEffect(() => {
     setGeneratedHint(null);
     setIsFlipped(false);
     setShowConfidence(false);
   }, [card]);
+
+  const displayHintRef = useRef(card.hint || generatedHint);
+  useEffect(() => { displayHintRef.current = card.hint || generatedHint; }, [card, generatedHint]);
 
   const displayHint = card.hint || generatedHint;
 
@@ -39,12 +56,16 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
       setIsGenerating(false);
     }
   };
+  const handleGenerateHintRef = useRef(handleGenerateHint);
+  useEffect(() => { handleGenerateHintRef.current = handleGenerateHint; }, [isGenerating]);
 
   const handleWrongAnswer = () => {
     playPing('no');
-    setIsFlipped(false);
     setIsShaking(true);
-    wrongAnswerPending.current = true;
+    setTimeout(() => {
+      setIsShaking(false);
+      onAnswerRef.current(false);
+    }, 420);
   };
 
   const fireConfetti = () => {
@@ -67,38 +88,38 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
         return;
       }
 
-      if (showConfidence) {
+      if (showConfidenceRef.current) {
         if (e.key === '1') {
           e.preventDefault();
           playPing('confidence');
           fireConfetti();
           setIsFlipped(false);
           setShowConfidence(false);
-          onAnswer(true, 'low');
+          onAnswerRef.current(true, 'low');
         } else if (e.key === '2') {
           e.preventDefault();
           playPing('confidence');
           fireConfetti();
           setIsFlipped(false);
           setShowConfidence(false);
-          onAnswer(true, 'medium');
+          onAnswerRef.current(true, 'medium');
         } else if (e.key === '3') {
           e.preventDefault();
           playPing('confidence');
           fireConfetti();
           setIsFlipped(false);
           setShowConfidence(false);
-          onAnswer(true, 'high');
+          onAnswerRef.current(true, 'high');
         }
         return;
       }
 
       if (e.key === 'Tab') {
         e.preventDefault();
-        if (!hintUsed && !isGenerating && !showConfidence) {
+        if (!hintUsedRef.current && !isGeneratingRef.current && !isFlippedRef.current) {
           playPing('hint');
-          if (displayHint) onUseHint();
-          else handleGenerateHint();
+          if (displayHintRef.current) onUseHintRef.current();
+          else handleGenerateHintRef.current();
         }
       } else if (e.key === 'Enter') {
         e.preventDefault();
@@ -112,7 +133,7 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showConfidence, isFlipped, hintUsed, isGenerating, displayHint, card, onAnswer, onUseHint]);
+  }, []);  // attaches once — all state read via refs
 
   return (
     <div className="flashcard-container">
@@ -121,13 +142,6 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
         onClick={() => {
           playPing('flip');
           setIsFlipped(!isFlipped);
-        }}
-        onAnimationEnd={() => {
-          if (wrongAnswerPending.current) {
-            wrongAnswerPending.current = false;
-            setIsShaking(false);
-            onAnswer(false);
-          }
         }}
       >
         <div className="flashcard-inner">
@@ -152,9 +166,9 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                   onUseHint();
                 }
               }}
-              disabled={hintUsed || showConfidence}
+              disabled={hintUsed || showConfidence || isFlipped}
             >
-              {hintUsed ? `Hint: ${displayHint}` : '💡 Show Hint (Tab)'}
+              {hintUsed ? `Hint: ${displayHint}` : isFlipped ? '🔒 Flip back to use hint' : '💡 Show Hint (Tab)'}
             </button>
           ) : (
             <button
@@ -163,9 +177,9 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
                 playPing('hint');
                 handleGenerateHint();
               }}
-              disabled={isGenerating || showConfidence}
+              disabled={isGenerating || showConfidence || isFlipped}
             >
-              {isGenerating ? 'Generating...' : '🤖 Generate Hint (Tab)'}
+              {isGenerating ? 'Generating...' : isFlipped ? '🔒 Flip back to generate hint' : '🤖 Generate Hint (Tab)'}
             </button>
           )}
         </div>

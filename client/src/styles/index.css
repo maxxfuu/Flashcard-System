@@ -77,6 +77,12 @@ html, body, #root {
   border: 1px solid var(--border);
 }
 
+.btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: var(--secondary);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .btn-secondary:hover:not(:disabled) {
     background: #e2e8f0;

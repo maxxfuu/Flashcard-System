@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDeck } from '../context/DeckContext';
@@ -8,22 +8,76 @@ const Homepage = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { decks, createDeck, deleteDeck } = useDeck();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [deckName, setDeckName] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
-  const handleCreateDeck = async (e) => {
-    e.preventDefault();
-    if (deckName.trim()) {
-      await createDeck(deckName.trim());
-      setDeckName('');
-      setShowCreateForm(false);
-    }
+  // Keep refs in sync so the single event handler always reads current values
+  const decksRef = useRef(decks);
+  const selectedIndexRef = useRef(selectedIndex);
+  const navigateRef = useRef(navigate);
+  const deleteDeckRef = useRef(deleteDeck);
+
+  useEffect(() => { decksRef.current = decks; }, [decks]);
+  useEffect(() => { selectedIndexRef.current = selectedIndex; }, [selectedIndex]);
+  useEffect(() => { navigateRef.current = navigate; }, [navigate]);
+  useEffect(() => { deleteDeckRef.current = deleteDeck; }, [deleteDeck]);
+
+  const handleCreateDeck = async () => {
+    const newDeck = await createDeck('Untitled Deck');
+    if (newDeck) navigate(`/create/${newDeck.id}`);
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const currentDecks = decksRef.current;
+      const currentSelected = selectedIndexRef.current;
+
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        if (idx < currentDecks.length) {
+          setSelectedIndex(idx);
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        setSelectedIndex(null);
+        return;
+      }
+
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        createDeck('Untitled Deck').then(newDeck => {
+          if (newDeck) navigateRef.current(`/create/${newDeck.id}`);
+        });
+        return;
+      }
+
+      if (currentSelected === null || currentSelected >= currentDecks.length) return;
+
+      const deck = currentDecks[currentSelected];
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        navigateRef.current(`/create/${deck.id}`);
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        navigateRef.current(`/study/${deck.id}`);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        deleteDeckRef.current(deck.id);
+        setSelectedIndex(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);  // attaches once, reads latest values via refs
 
   return (
     <div className="homepage">
@@ -45,25 +99,35 @@ const Homepage = () => {
           </div>
         ) : (
           <div className="deck-grid">
-            {decks.map(deck => (
-              <div key={deck.id} className="deck-card">
-                <h3>{deck.title}</h3>
+            {decks.map((deck, index) => (
+              <div
+                key={deck.id}
+                className={`deck-card ${selectedIndex === index ? 'deck-card-selected' : ''}`}
+                onClick={() => setSelectedIndex(index)}
+              >
+                <div className="deck-card-header">
+                  <span className="deck-number">{index + 1}</span>
+                  <h3>{deck.title}</h3>
+                </div>
+                {selectedIndex === index && (
+                  <p className="deck-shortcut-hint">(E) Edit · (S) Study · (⌫) Delete</p>
+                )}
                 <div className="deck-actions">
                   <button
                     className="btn btn-secondary"
-                    onClick={() => navigate(`/create/${deck.id}`)}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/create/${deck.id}`); }}
                   >
                     Edit
                   </button>
                   <button
                     className="btn btn-primary"
-                    onClick={() => navigate(`/study/${deck.id}`)}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/study/${deck.id}`); }}
                   >
                     Study
                   </button>
                   <button
                     className="btn btn-danger"
-                    onClick={() => deleteDeck(deck.id)}
+                    onClick={(e) => { e.stopPropagation(); deleteDeck(deck.id); }}
                   >
                     Delete
                   </button>
@@ -74,37 +138,12 @@ const Homepage = () => {
         )}
 
         <div className="action-section">
-          {!showCreateForm ? (
-            <button
-              className="btn btn-primary btn-lg"
-              onClick={() => setShowCreateForm(true)}
-            >
-              + Create New Set
-            </button>
-          ) : (
-            <form className="create-form" onSubmit={handleCreateDeck}>
-              <input
-                type="text"
-                value={deckName}
-                onChange={(e) => setDeckName(e.target.value)}
-                placeholder="Enter deck name"
-                autoFocus
-                required
-              />
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  Create
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => { setShowCreateForm(false); setDeckName(''); }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
+          <button
+            className="btn btn-primary btn-lg"
+            onClick={handleCreateDeck}
+          >
+            + Create New Set (C)
+          </button>
         </div>
       </div>
     </div>
