@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Any, Union, List
 from datetime import datetime, timezone
@@ -8,6 +9,14 @@ app = FastAPI(
     title="FSRS Microservice",
     description="Microservice to calculate spaced repetition intervals using FSRS with round-based frequencies.",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 scheduler = fsrs.Scheduler()
@@ -132,3 +141,20 @@ async def update_fsrs_state(requests: List[FSRSRequest]):
     for req in requests:
         responses.append(process_single_card(req))
     return responses
+
+class HintRequest(BaseModel):
+    front: str
+    back: str
+
+@app.post("/generate-hint")
+async def generate_hint(req: HintRequest):
+    # DL Model Hook here. Currently using mock logic.
+    if not req.back:
+        return {"hint": "No answer provided to generate hint from."}
+    
+    words = req.back.split()
+    if len(words) > 1:
+        hint = f"Starts with '{words[0]}' and ends with '{words[-1]}'"
+    else:
+        hint = f"Starts with '{req.back[:1]}'"
+    return {"hint": f"Generated: {hint}"}

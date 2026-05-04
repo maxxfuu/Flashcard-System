@@ -19,6 +19,7 @@ const StudySession = () => {
   const [sessionComplete, setSessionComplete] = useState(false);
   const [answers, setAnswers] = useState({});
   const [hintsUsed, setHintsUsed] = useState(new Set());
+  const [startTime, setStartTime] = useState(Date.now());
 
   if (!deck || deck.flashcards.length === 0) {
     return (
@@ -46,6 +47,11 @@ const StudySession = () => {
         [currentCard.id]: isCorrect
       }).filter(Boolean).length;
       const accuracy = Math.round((correctCount / deck.flashcards.length) * 100);
+      const endTime = Date.now();
+      const timeTakenInSeconds = Math.floor((endTime - startTime) / 1000);
+      const minutes = Math.floor(timeTakenInSeconds / 60);
+      const seconds = timeTakenInSeconds % 60;
+      const timeTakenStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
 
       saveSessionStats({
         deckName: deck.name,
@@ -53,7 +59,7 @@ const StudySession = () => {
         correctCards: isCorrect ? correctCount : Object.values(answers).filter(Boolean).length,
         accuracy,
         hintsUsed: hintsUsed.size,
-        timestamp: new Date().toLocaleTimeString()
+        timeTaken: timeTakenStr
       });
 
       setSessionComplete(true);
@@ -70,8 +76,16 @@ const StudySession = () => {
     navigate('/home');
   };
 
+  const handleRedoSession = () => {
+    setCurrentIndex(0);
+    setAnswers({});
+    setHintsUsed(new Set());
+    setStartTime(Date.now());
+    setSessionComplete(false);
+  };
+
   if (sessionComplete) {
-    return <MetricsSplash onBack={handleEndSession} />;
+    return <MetricsSplash onBack={handleEndSession} onRedo={handleRedoSession} />;
   }
 
   return (

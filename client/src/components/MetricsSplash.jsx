@@ -2,7 +2,7 @@ import React from 'react';
 import { useDeck } from '../context/DeckContext';
 import '../styles/MetricsSplash.css';
 
-const MetricsSplash = ({ onBack }) => {
+const MetricsSplash = ({ onBack, onRedo }) => {
   const { sessionStats } = useDeck();
 
   if (!sessionStats) {
@@ -43,12 +43,17 @@ const MetricsSplash = ({ onBack }) => {
           </div>
 
           <div className="metric-card">
-            <div className="metric-value">{sessionStats.timestamp}</div>
-            <div className="metric-label">Time</div>
+            <div className="metric-value">{sessionStats.timeTaken}</div>
+            <div className="metric-label">Time Taken</div>
           </div>
         </div>
 
-        <div className="metrics-footer">
+        <div className="metrics-footer" style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          {onRedo && (
+            <button className="btn btn-secondary btn-lg" onClick={onRedo}>
+              Redo Round
+            </button>
+          )}
           <button className="btn btn-primary btn-lg" onClick={onBack}>
             Back to Home
           </button>
