@@ -142,8 +142,5 @@ async def generate_hint(req: HintRequest):
         return {"hint": "No answer provided to generate hint from."}
     generator = HintGenerator()
     prompt = FlashcardPrompt(question=req.front, answer=req.back)
-    hints = generator.generate_hints(prompt, max_hints=3)
-    if not hints:
-        return {"hint": "No hint available."}
-    letter_hint = next((h for h in hints if h.hint_type == "letter"), hints[-1])
-    return {"hint": letter_hint.text}
+    hint = generator.generate_ai_hint(prompt)
+    return {"hint": hint}

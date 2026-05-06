@@ -62,6 +62,31 @@ class HintGenerator:
             for index, (hint_type, text) in enumerate(candidates[:max_hints])
         ]
 
+    def generate_ai_hint(self, prompt: FlashcardPrompt) -> str:
+        """Generate a single hint using Gemini 2.5 Flash Lite."""
+        import os
+        from google import genai
+
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=self._single_hint_prompt(prompt),
+        )
+        return response.text.strip()
+
+    def _single_hint_prompt(self, prompt: FlashcardPrompt) -> str:
+        question = prompt.question.strip()
+        answer = prompt.answer.strip()
+        return "\n".join([
+            "You are a flashcard study assistant.",
+            "Give ONE short hint for this flashcard that helps the learner recall the answer.",
+            "Mention the first letter of the answer without revealing it fully.",
+            "Return only the hint text — no labels, no numbering, no explanation.",
+            "",
+            f"Front: {question}",
+            f"Answer: {answer}",
+        ])
+
     def build_model_prompt(self, prompt: FlashcardPrompt, max_hints: int = 3) -> str:
         """Create the text prompt a future DL model can use to generate hints."""
 
