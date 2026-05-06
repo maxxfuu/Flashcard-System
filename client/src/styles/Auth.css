@@ -3,9 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.15), transparent 40%),
-    radial-gradient(circle at bottom right, rgba(16, 69, 185, 0.12), transparent 30%),
-    #99e497;
+  background: #ffffff;
   padding: 20px;
 }
 
