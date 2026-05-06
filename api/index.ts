@@ -31,10 +31,10 @@ app.use((req, _res, next) => {
   next();
 });
 
-app.use("/flashcards", flashcardsRoutes);
-app.use("/user", userRoutes);
-app.use("/sessions", sessionsRoutes);
+app.use("/api/flashcards", flashcardsRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/sessions", sessionsRoutes);
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 export default app;
