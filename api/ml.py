@@ -145,4 +145,5 @@ async def generate_hint(req: HintRequest):
     hints = generator.generate_hints(prompt, max_hints=3)
     if not hints:
         return {"hint": "No hint available."}
-    return {"hint": " • ".join(h.text for h in hints)}
+    letter_hint = next((h for h in hints if h.hint_type == "letter"), hints[-1])
+    return {"hint": letter_hint.text}
