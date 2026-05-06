@@ -1,17 +1,19 @@
 import "dotenv/config";
-import express, { CorsOptions } from "express";
+import express from "express";
 import cors from "cors";
-import { flashcardsRoutes } from "../routes/flashcards";
-import { userRoutes } from "../routes/user";
-import { sessionsRoutes } from "../routes/sessions";
+import { flashcardsRoutes } from "../server/routes/flashcards";
+import { userRoutes } from "../server/routes/user";
+import { sessionsRoutes } from "../server/routes/sessions";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-const allowedOrigins = ["http://localhost:3000"];
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.CLIENT_URL,
+].filter(Boolean) as string[];
 
-const corsOptions: CorsOptions = {
-  origin(origin, callback) {
+const corsOptions: cors.CorsOptions = {
+  origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`Not allowed by CORS: ${origin}`));
@@ -35,6 +37,4 @@ app.use("/sessions", sessionsRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+export default app;
