@@ -15,11 +15,13 @@ const Homepage = () => {
   const selectedIndexRef = useRef(selectedIndex);
   const navigateRef = useRef(navigate);
   const deleteDeckRef = useRef(deleteDeck);
+  const createDeckRef = useRef(createDeck);
 
   useEffect(() => { decksRef.current = decks; }, [decks]);
   useEffect(() => { selectedIndexRef.current = selectedIndex; }, [selectedIndex]);
   useEffect(() => { navigateRef.current = navigate; }, [navigate]);
   useEffect(() => { deleteDeckRef.current = deleteDeck; }, [deleteDeck]);
+  useEffect(() => { createDeckRef.current = createDeck; }, [createDeck]);
 
   const handleCreateDeck = async () => {
     const newDeck = await createDeck('Untitled Deck');
@@ -53,7 +55,7 @@ const Homepage = () => {
 
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault();
-        createDeck('Untitled Deck').then(newDeck => {
+        createDeckRef.current('Untitled Deck').then(newDeck => {
           if (newDeck) navigateRef.current(`/create/${newDeck.id}`);
         });
         return;

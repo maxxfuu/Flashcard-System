@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { playPing } from '../utils/audio';
 import '../styles/FlashcardCard.css';
@@ -36,15 +36,18 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
 
   const displayHint = card.hint || generatedHint;
 
-  const handleGenerateHint = async () => {
+  const handleGenerateHint = useCallback(async () => {
     if (isGenerating) return;
     setIsGenerating(true);
     try {
-      const response = await fetch('http://localhost:8001/generate-hint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ front: card.front, back: card.back })
-      });
+      const response = await fetch(
+        process.env.REACT_APP_GENERATE_HINT_URL || '/api/ml/generate-hint',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ front: card.front, back: card.back })
+        }
+      );
       if (!response.ok) throw new Error("Failed to generate hint");
       const data = await response.json();
       setGeneratedHint(data.hint);
@@ -55,9 +58,9 @@ const FlashcardCard = ({ card, onAnswer, onUseHint, hintUsed }) => {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [isGenerating, card.front, card.back, onUseHint]);
   const handleGenerateHintRef = useRef(handleGenerateHint);
-  useEffect(() => { handleGenerateHintRef.current = handleGenerateHint; }, [isGenerating]);
+  useEffect(() => { handleGenerateHintRef.current = handleGenerateHint; }, [handleGenerateHint]);
 
   const handleWrongAnswer = () => {
     playPing('no');
